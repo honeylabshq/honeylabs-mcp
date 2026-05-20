@@ -1,0 +1,26 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "net.honeylabs/mcp",
+  "title": "HoneyLabs",
+  "description": "Query 90 days of honeypot telemetry: IP reputation, scanner classification, CVE probing trends, TLS/SSH fingerprints, attack timelines. 7 tools, free tier (500 credits/day), OAuth + bearer token auth.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/honeylabshq/honeylabs-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://honeylabs.net",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp.honeylabs.net/mcp",
+      "headers": [
+        {
+          "name": "Authorization",
+          "description": "Bearer <hlk_…> API key from https://honeylabs.net/dashboard. OAuth 2.1 with PKCE is also supported (DCR endpoint at /oauth/register).",
+          "isRequired": true,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}
