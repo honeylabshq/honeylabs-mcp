@@ -83,7 +83,28 @@ async def _call_or_stub(name: str, arguments: dict) -> Any:
             )
         if r.status_code in (401, 403):
             return [{"_stub": _STUB_MESSAGE, "_upstream_status": r.status_code}]
-        body = r.json()
+        # The streamable-HTTP MCP transport returns either application/json
+        # OR text/event-stream depending on what the server prefers. FastMCP
+        # in our prod config emits SSE-framed JSON (`data: {...}\n\n`), so
+        # naive r.json() fails with "Expecting value". Handle both shapes.
+        ctype = (r.headers.get("content-type") or "").lower()
+        if "text/event-stream" in ctype:
+            body = None
+            for frame in r.text.split("\n\n"):
+                for line in frame.splitlines():
+                    if line.startswith("data:"):
+                        data_str = line[5:].lstrip()
+                        try:
+                            body = json.loads(data_str)
+                            break
+                        except Exception:
+                            continue
+                if body is not None:
+                    break
+            if body is None:
+                return [{"_stub": _STUB_MESSAGE, "_upstream_error": "empty SSE stream"}]
+        else:
+            body = r.json()
     except Exception as exc:
         return [{"_stub": _STUB_MESSAGE, "_upstream_error": str(exc)[:200]}]
 
