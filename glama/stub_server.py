@@ -1,24 +1,41 @@
-"""HoneyLabs MCP — stub stdio server for Glama directory evaluation.
+"""HoneyLabs MCP — stdio bridge for the Glama directory.
 
-This file is NOT the production server. It exists so the Glama directory
-can build + run a sandboxed image of HoneyLabs MCP and score the tool
-definitions (TDQS + Server Coherence). The real server lives at
-https://mcp.honeylabs.net/mcp and requires a HoneyLabs API key.
+Two modes:
 
-Each tool here mirrors the production server's tool name, parameter
-schema, and docstring exactly — those are what Glama scores. The
-implementation body returns a fixed instruction pointing the caller at
-the live endpoint, because the real implementation depends on backend
-services (ClickHouse, Postgres, Redis behind WireGuard) that aren't
-available in a sandboxed build.
+1. **Bridge mode** — when `HONEYLABS_API_KEY` env var is set to a valid
+   key, each tool forwards the JSON-RPC call to the live remote server
+   at https://mcp.honeylabs.net/mcp and returns real data. This is the
+   path real users hit when they configure their key in Glama's
+   "Try in browser" UI or when Glama wires us into a workspace.
 
-Sync point: if you edit a tool's signature or docstring in
-mcp_server/main.py in the honeylabs-api repo, mirror the change here so
-the directory's evaluation stays in sync with what real clients see.
+2. **Stub mode** — when no key is set, or the key is invalid (401/403
+   from upstream), each tool returns a fixed message pointing the
+   caller at the live endpoint. This keeps the schema visible for the
+   Glama directory evaluator (which calls with a dummy key for
+   sandboxed startup checks) without leaking the real backend's
+   responses.
+
+Tool names, parameter schemas, and docstrings are kept in sync with
+production (honeylabs-api/mcp_server/main.py). Glama's Tool Definition
+Quality scoring works off those — the bodies below don't affect the
+score, only the runtime behavior in the Glama browser-runner.
 """
-from typing import Optional
+import json
+import os
+from typing import Any, Optional
 
+import httpx
 from fastmcp import FastMCP
+
+UPSTREAM_URL = "https://mcp.honeylabs.net/mcp"
+API_KEY = (os.environ.get("HONEYLABS_API_KEY") or "").strip()
+
+_STUB_MESSAGE = (
+    "This is the HoneyLabs MCP stub used by directory evaluators. "
+    "Configure HONEYLABS_API_KEY with a real key from "
+    "https://honeylabs.net/dashboard to query live honeypot data."
+)
+
 
 mcp = FastMCP(
     name="HoneyLabs Threat Intelligence",
@@ -41,12 +58,50 @@ mcp = FastMCP(
 )
 
 
-_STUB = (
-    "This is the HoneyLabs MCP stub used by directory evaluators. "
-    "Connect to the live server at https://mcp.honeylabs.net/mcp "
-    "(OAuth or Bearer hlk_... from https://honeylabs.net/dashboard) "
-    "to query real honeypot data."
-)
+async def _call_or_stub(name: str, arguments: dict) -> Any:
+    """Forward to live server when an API key is present. Falls back to stub
+    on any failure (no key, 401, network blip) so the directory evaluator
+    always gets a parseable response and never blocks on a sandboxed network."""
+    if not API_KEY:
+        return [{"_stub": _STUB_MESSAGE}]
+    payload = {
+        "jsonrpc": "2.0",
+        "method": "tools/call",
+        "id": 1,
+        "params": {"name": name, "arguments": {k: v for k, v in arguments.items() if v is not None}},
+    }
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            r = await client.post(
+                UPSTREAM_URL,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {API_KEY}",
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                },
+            )
+        if r.status_code in (401, 403):
+            return [{"_stub": _STUB_MESSAGE, "_upstream_status": r.status_code}]
+        body = r.json()
+    except Exception as exc:
+        return [{"_stub": _STUB_MESSAGE, "_upstream_error": str(exc)[:200]}]
+
+    if isinstance(body, dict) and body.get("error"):
+        return [{"_upstream_error": body["error"]}]
+    result = (body.get("result") or {}) if isinstance(body, dict) else {}
+    content = result.get("content") or []
+    # Real server emits a single text content block whose text is the
+    # JSON-serialized return value of the original tool. Parse it back so
+    # FastMCP can re-serialize in this stdio context instead of double-
+    # encoding the wrapped form.
+    if content and content[0].get("type") == "text":
+        text = content[0].get("text", "")
+        try:
+            return json.loads(text)
+        except Exception:
+            return text
+    return result
 
 
 @mcp.tool()
@@ -67,7 +122,11 @@ async def search_events_tool(
     dest_port, protocol ('tls' or ''), http_method. since/until are ISO-8601 UTC strings.
     Each record includes: source_ip, country, asn, dest_port, user_agent, url_path,
     tls_client_ja4, http_request_ja4h, ssh_client_hassh, network_protocol, timestamp."""
-    return [{"_stub": _STUB}]
+    return await _call_or_stub("search_events_tool", {
+        "since": since, "until": until, "source_ip": source_ip, "country": country,
+        "asn": asn, "dest_port": dest_port, "protocol": protocol,
+        "http_method": http_method, "limit": limit,
+    })
 
 
 @mcp.tool()
@@ -87,7 +146,10 @@ async def top_attackers_tool(
     Optional filters: country (2-letter ISO, e.g. 'CN'), dest_port, asn (e.g. 'AS12345').
     Adding a filter is required for large time ranges to stay within memory limits.
     since/until are ISO-8601 UTC strings."""
-    return [{"_stub": _STUB}]
+    return await _call_or_stub("top_attackers_tool", {
+        "since": since, "until": until, "by": by, "limit": limit,
+        "country": country, "dest_port": dest_port, "asn": asn,
+    })
 
 
 @mcp.tool()
@@ -97,7 +159,7 @@ async def ioc_lookup_tool(ioc: str) -> dict:
     'what does this IP do?', 'when was it last seen?', 'is this IP in your data?'. Returns:
     total_events (0 = never observed), first_seen, last_seen, country, ASN, all ports targeted,
     top user agents, top URL paths, TLS/HTTP/SSH fingerprints. Covers both IPv4 and domains."""
-    return {"_stub": _STUB, "ioc": ioc}
+    return await _call_or_stub("ioc_lookup_tool", {"ioc": ioc})
 
 
 @mcp.tool()
@@ -111,7 +173,9 @@ async def payload_search_tool(
     'find attacks targeting /wp-admin', 'show exploit attempts for CVE-2024-XXXX', 'find
     requests with this user agent string', 'what payloads hit port 80 last week'. Pro/Team
     plan only. since/until are ISO-8601 UTC strings."""
-    return [{"_stub": _STUB}]
+    return await _call_or_stub("payload_search_tool", {
+        "query": query, "since": since, "until": until, "limit": limit,
+    })
 
 
 @mcp.tool()
@@ -127,7 +191,11 @@ async def attack_timeline_tool(
     week', 'was there a spike on port 22?', 'how has SSH scanning changed?', 'attack volume
     from China over 30 days'. bucket: 'hour' or 'day'. Optional filters: filter_protocol
     ('tls'/'''), filter_country (2-letter code), filter_dest_port. since/until ISO-8601 UTC."""
-    return [{"_stub": _STUB}]
+    return await _call_or_stub("attack_timeline_tool", {
+        "since": since, "until": until, "bucket": bucket,
+        "filter_protocol": filter_protocol, "filter_country": filter_country,
+        "filter_dest_port": filter_dest_port,
+    })
 
 
 @mcp.tool()
@@ -137,7 +205,9 @@ async def asn_enrich_tool(asn: str, since: str, until: str) -> dict:
     hosting provider', 'attribute this IP to its network'. asn format: 'AS12345'.
     Returns: total events, unique IPs, top targeted ports, top source countries, top user
     agents, org name. since/until are ISO-8601 UTC strings."""
-    return {"_stub": _STUB, "asn": asn}
+    return await _call_or_stub("asn_enrich_tool", {
+        "asn": asn, "since": since, "until": until,
+    })
 
 
 @mcp.tool()
@@ -153,7 +223,10 @@ async def fingerprint_search_tool(
     common is this HASSH?', 'find all scanners with this SSH client fingerprint'. fp_type:
     'ja4' (TLS client, 3.7M events), 'ja4h' (HTTP client, 3.2M events), 'hassh' (SSH
     client, 26K events). since/until are ISO-8601 UTC strings."""
-    return {"_stub": _STUB, "fingerprint": fingerprint, "fp_type": fp_type}
+    return await _call_or_stub("fingerprint_search_tool", {
+        "fingerprint": fingerprint, "fp_type": fp_type,
+        "since": since, "until": until, "limit": limit,
+    })
 
 
 if __name__ == "__main__":
