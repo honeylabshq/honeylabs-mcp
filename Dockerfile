@@ -1,30 +1,24 @@
-# HoneyLabs MCP is a *remote* server. The production endpoint lives at
-# https://mcp.honeylabs.net/mcp and there's nothing to containerise on
-# the client side.
+# HoneyLabs MCP — stub stdio server for Glama directory evaluation.
 #
-# Some registries (Glama, etc.) still expect a Dockerfile in the repo
-# so they can run introspection against the resulting container. This
-# image is a thin stdio→HTTP shim: it boots, connects to the public
-# endpoint via the standard MCP HTTP transport, and forwards
-# introspection (`tools/list`, `prompts/list`, etc.) over stdio so the
-# registry can score the server without needing the production
-# bearer-token / OAuth flow.
+# Production lives at https://mcp.honeylabs.net/mcp (remote streamable-http,
+# OAuth + Bearer auth). The Glama directory needs a Dockerfile-buildable
+# artifact to run sandboxed for Tool Definition Quality + Server Coherence
+# scoring; this image satisfies that by registering the same 7 tools with
+# identical names, parameter schemas, and docstrings as production. The
+# tool *implementations* return a stub message pointing the caller at the
+# live endpoint, because the real implementations depend on backend
+# services (ClickHouse, Postgres, Redis behind WireGuard) that aren't
+# available in a sandboxed build.
 #
-# Anyone running a real workload should NOT use this image; install the
-# server in their MCP client directly per the README's "Install" section.
+# DO NOT use this image for real workloads — install the public MCP
+# endpoint in your MCP client per the README "Install" section.
 
-FROM node:20-alpine
+FROM python:3.12-slim
 
-# mcp-remote is the canonical stdio adapter for hosted MCP servers.
-# Maintained at https://github.com/modelcontextprotocol/mcp-remote
-RUN npm install -g mcp-remote@latest
+WORKDIR /app
+COPY glama/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-ENV HONEYLABS_MCP_URL=https://mcp.honeylabs.net/mcp
+COPY glama/stub_server.py ./stub_server.py
 
-# Default to read-only introspection (no auth header) — the public
-# `/mcp` endpoint advertises its tool list under MCP protocol-level
-# inspection even when the bearer token is missing. For real tool
-# calls, pass `--header "Authorization: Bearer <key>"` via the
-# wrapping MCP client config.
-ENTRYPOINT ["mcp-remote"]
-CMD ["https://mcp.honeylabs.net/mcp"]
+ENTRYPOINT ["python", "stub_server.py"]
