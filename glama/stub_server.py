@@ -70,6 +70,7 @@ async def _call_or_stub(name: str, arguments: dict) -> Any:
         "id": 1,
         "params": {"name": name, "arguments": {k: v for k, v in arguments.items() if v is not None}},
     }
+    diag = {"_diag_v": "1.0.3"}  # bump on every deploy to confirm the new code is live
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             r = await client.post(
@@ -81,17 +82,20 @@ async def _call_or_stub(name: str, arguments: dict) -> Any:
                     "Accept": "application/json, text/event-stream",
                 },
             )
+        diag["_status"] = r.status_code
+        diag["_ctype"] = (r.headers.get("content-type") or "").lower()
+        diag["_body_preview"] = r.text[:300]
         if r.status_code in (401, 403):
-            return [{"_stub": _STUB_MESSAGE, "_upstream_status": r.status_code}]
-        # The streamable-HTTP MCP transport returns either application/json
-        # OR text/event-stream depending on what the server prefers. FastMCP
-        # in our prod config emits SSE-framed JSON (`data: {...}\n\n`), so
-        # naive r.json() fails with "Expecting value". Handle both shapes.
-        ctype = (r.headers.get("content-type") or "").lower()
-        if "text/event-stream" in ctype:
-            body = None
+            return [{"_stub": _STUB_MESSAGE, **diag, "_upstream_status": r.status_code}]
+        # Streamable-HTTP MCP transport may return application/json OR
+        # text/event-stream. Try SSE parsing if the content-type says so,
+        # then fall back to direct JSON if SSE yields nothing.
+        ctype = diag["_ctype"]
+        body = None
+        if "text/event-stream" in ctype or r.text.startswith("event:") or "data:" in r.text[:64]:
             for frame in r.text.split("\n\n"):
                 for line in frame.splitlines():
+                    line = line.rstrip("\r")
                     if line.startswith("data:"):
                         data_str = line[5:].lstrip()
                         try:
@@ -101,12 +105,13 @@ async def _call_or_stub(name: str, arguments: dict) -> Any:
                             continue
                 if body is not None:
                     break
-            if body is None:
-                return [{"_stub": _STUB_MESSAGE, "_upstream_error": "empty SSE stream"}]
-        else:
-            body = r.json()
+        if body is None:
+            try:
+                body = r.json()
+            except Exception as parse_exc:
+                return [{"_stub": _STUB_MESSAGE, **diag, "_upstream_error": f"parse: {parse_exc}"}]
     except Exception as exc:
-        return [{"_stub": _STUB_MESSAGE, "_upstream_error": str(exc)[:200]}]
+        return [{"_stub": _STUB_MESSAGE, **diag, "_upstream_error": str(exc)[:200]}]
 
     if isinstance(body, dict) and body.get("error"):
         return [{"_upstream_error": body["error"]}]
