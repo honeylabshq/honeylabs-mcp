@@ -13,7 +13,7 @@
 # DO NOT use this image for real workloads — install the public MCP
 # endpoint in your MCP client per the README "Install" section.
 
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 WORKDIR /app
 COPY glama/requirements.txt ./requirements.txt
