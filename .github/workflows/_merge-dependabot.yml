@@ -23,10 +23,15 @@ jobs:
                 --jq '.[] | select(.author.login=="dependabot[bot]") | .number' | sort -n)
           echo "dependabot PRs: $prs"
           for pr in $prs; do
-            for attempt in 1 2 3 4 5; do
-              if gh pr merge "$pr" --repo "$REPO" --squash --delete-branch; then
-                echo "merged #$pr"; break
-              fi
-              echo "retry #$pr (attempt $attempt)"; sleep 12
+            merged=0
+            for method in --squash --merge --rebase; do
+              for attempt in 1 2 3; do
+                if gh pr merge "$pr" --repo "$REPO" $method --delete-branch; then
+                  echo "merged #$pr via $method"; merged=1; break
+                fi
+                sleep 8
+              done
+              [ "$merged" = 1 ] && break
             done
+            [ "$merged" = 0 ] && echo "::error::could not merge #$pr by any method"
           done
