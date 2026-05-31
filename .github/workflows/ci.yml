@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  python:
+    name: python stub
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install -r glama/requirements.txt
+      - name: Compile
+        run: python -m compileall glama
+      - name: Import stub server (registers tools, does not start it)
+        run: python -c "import sys; sys.path.insert(0, 'glama'); import stub_server; print('tools registered')"
+
+  docker:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the Glama image
+        run: docker build -t honeylabs-mcp:ci .
