@@ -1,16 +1,16 @@
 # HoneyLabs
 
 **Honeypot threat intelligence as MCP tools.** Query 90 days of probe
-data from our honeypot sensor network — IP reputation, scanner
-classification, CVE probing trends, TLS/SSH/JA4 fingerprints, attack
-timelines — straight from Claude, Cursor, Gemini, Cline, or any other
-Model Context Protocol client.
+data from our honeypot sensor network: IP reputation, scanner
+classification, CVE probing trends, TLS/SSH/JA4 fingerprints, and attack
+timelines. Use it straight from Claude, Cursor, Gemini, Cline, or any
+other Model Context Protocol client.
 
 - 🌐 **Web:** https://honeylabs.net
 - 🔌 **MCP endpoint:** https://mcp.honeylabs.net/mcp (streamable HTTP)
 - 🧰 **Tool catalog & worked prompts:** https://honeylabs.net/mcp
 - 📖 **Docs:** https://honeylabs.net/docs
-- 💼 **Pricing:** Free tier · 500 credits/day · no card
+- 🔑 **Access:** free with a key, within fair-use limits
 
 ---
 
@@ -72,27 +72,27 @@ Cline's OAuth flow) works out of the box.
 | `search_events` | Raw honeypot events matching filters (IP, ASN, country, dest_port, protocol, http_method). |
 | `attack_timeline` | Hourly / daily attack volume over a window, with protocol / country / port filters. |
 | `asn_enrich` | Full profile for an ASN: total events, unique IPs, top ports, source countries, user-agents, org name. |
-| `fingerprint_search` | Search by TLS JA4 / HTTP JA4H / SSH HASSH fingerprint — find shared infrastructure. |
+| `fingerprint_search` | Search by TLS JA4 / HTTP JA4H / SSH HASSH fingerprint to find shared infrastructure. |
 | `payload_search` | Full-text URL-path + user-agent search across attack traffic. Pro tier. |
 
-Each row in a response counts as one credit. Free tier gets 500
-credits/day, Pro gets 50,000, Team gets 500,000. See
-https://honeylabs.net/docs#plans for the full breakdown.
+Each row in a response counts as one credit. A free key gives 500
+credits a day, with higher limits for heavier use. See
+https://honeylabs.net/docs#plans for the breakdown.
 
 ---
 
 ## What the data is
 
 HoneyLabs runs a fleet of honeypots that get probed by the public
-internet all day. Every probe — every connection, every TLS
-handshake, every HTTP request — is logged with the source IP, ASN,
+internet all day. Every probe, meaning every connection, TLS
+handshake, and HTTP request, is logged with the source IP, ASN,
 geo, TLS/HTTP/SSH fingerprints, and full URL path. We retain the
 last 90 days and expose it through this MCP server, a JSON API, a
 public lookup web UI at `/lookup/<ip>`, and CSV / STIX exports.
 
-What it is **not**: a CVSS database, a reputation feed copied from
-elsewhere, or generic threat indicators. It's *our own ground-truth
-observations* of what's actively scanning the internet right now.
+This is our own ground-truth record of what is actively scanning the
+internet right now, gathered first-hand rather than copied from a CVSS
+database or a third-party reputation feed.
 
 ---
 
