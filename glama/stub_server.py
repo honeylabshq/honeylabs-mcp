@@ -1,14 +1,14 @@
-"""HoneyLabs MCP — stdio bridge for the Glama directory.
+"""HoneyLabs MCP: stdio bridge for the Glama directory.
 
 Two modes:
 
-1. **Bridge mode** — when `HONEYLABS_API_KEY` env var is set to a valid
+1. **Bridge mode**: when `HONEYLABS_API_KEY` env var is set to a valid
    key, each tool forwards the JSON-RPC call to the live remote server
    at https://mcp.honeylabs.net/mcp and returns real data. This is the
    path real users hit when they configure their key in Glama's
    "Try in browser" UI or when Glama wires us into a workspace.
 
-2. **Stub mode** — when no key is set, or the key is invalid (401/403
+2. **Stub mode**: when no key is set, or the key is invalid (401/403
    from upstream), each tool returns a fixed message pointing the
    caller at the live endpoint. This keeps the schema visible for the
    Glama directory evaluator (which calls with a dummy key for
@@ -17,7 +17,7 @@ Two modes:
 
 Tool names, parameter schemas, and docstrings are kept in sync with
 production (honeylabs-api/mcp_server/main.py). Glama's Tool Definition
-Quality scoring works off those — the bodies below don't affect the
+Quality scoring works off those; the bodies below don't affect the
 score, only the runtime behavior in the Glama browser-runner.
 """
 import json
@@ -257,7 +257,7 @@ async def fingerprint_search_tool(
     """Search honeypot activity by TLS, HTTP, or SSH fingerprint. Use when a user asks:
     'have you seen this JA4 fingerprint?', 'which IPs share this TLS fingerprint?', 'how
     common is this HASSH?', 'find all scanners with this SSH client fingerprint'. fp_type:
-    'ja4' (TLS client), 'ja3' (legacy TLS client, MD5 — still keyed by many TI feeds),
+    'ja4' (TLS client), 'ja3' (legacy TLS client, MD5, still keyed by many TI feeds),
     'ja4h' (HTTP client), 'hassh' (SSH client). since/until are ISO-8601 UTC strings."""
     return await _call_or_stub("fingerprint_search_tool", {
         "fingerprint": fingerprint, "fp_type": fp_type,
