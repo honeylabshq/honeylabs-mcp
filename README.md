@@ -2,7 +2,8 @@
 
 **Honeypot threat intelligence as MCP tools.** Query 90 days of probe
 data from our honeypot sensor network: IP reputation, scanner
-classification, CVE probing trends, TLS/SSH/JA4 fingerprints, and attack
+classification, CVE probing trends, TLS/SSH fingerprints (JA4, JA3, JA4H,
+HASSH), mTLS client certificates, Community ID flow hashes, and attack
 timelines. Use it straight from Claude, Cursor, Gemini, Cline, or any
 other Model Context Protocol client.
 
@@ -69,10 +70,10 @@ Cline's OAuth flow) works out of the box.
 |---|---|
 | `ioc_lookup` | Is this IP / domain known to be probing? When was it last seen? What ports / paths does it hit? |
 | `top_attackers` | Ranked leaderboard of source IPs, ASNs, countries, ports, or user-agents over a time window. |
-| `search_events` | Raw honeypot events matching filters (IP, ASN, country, dest_port, protocol, http_method). |
+| `search_events` | Raw honeypot events matching filters (IP, ASN, country, dest_port, protocol, http_method, ja4/ja3, community_id, has_client_cert). |
 | `attack_timeline` | Hourly / daily attack volume over a window, with protocol / country / port filters. |
 | `asn_enrich` | Full profile for an ASN: total events, unique IPs, top ports, source countries, user-agents, org name. |
-| `fingerprint_search` | Search by TLS JA4 / HTTP JA4H / SSH HASSH fingerprint to find shared infrastructure. |
+| `fingerprint_search` | Search by TLS JA4 / JA3 / HTTP JA4H / SSH HASSH fingerprint to find shared infrastructure. |
 | `payload_search` | Full-text URL-path + user-agent search across attack traffic. Pro tier. |
 
 Each row in a response counts as one credit. A free key gives 500

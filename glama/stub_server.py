@@ -52,7 +52,9 @@ mcp = FastMCP(
         "- Exploit or payload patterns in HTTP traffic -> payload_search_tool\n\n"
         "Data notes: sensor IPs and names are redacted. All timestamps are UTC. "
         "network_protocol is '' (raw TCP) or 'tls'. "
-        "Fingerprint coverage: tls_client_ja4 (3.7M events), http_request_ja4h (3.2M), ssh_client_hassh (26K). "
+        "Fingerprint coverage: tls_client_ja4, tls_client_ja3 (legacy MD5), http_request_ja4h, ssh_client_hassh; "
+        "events also carry network.community_id (Corelight flow hash) and, when a client presents one, an mTLS "
+        "client certificate (tls_client_cert_subject). search_events filters on ja4/ja3/community_id/has_client_cert. "
         "top_attackers 'by' values: ip, asn, country, port, user_agent, ja4, url_path."
     ),
 )
@@ -140,18 +142,26 @@ async def search_events_tool(
     dest_port: Optional[int] = None,
     protocol: Optional[str] = None,
     http_method: Optional[str] = None,
+    ja4: Optional[str] = None,
+    ja3: Optional[str] = None,
+    community_id: Optional[str] = None,
+    has_client_cert: Optional[bool] = None,
     limit: int = 100,
 ) -> list[dict]:
     """Return individual raw honeypot events with all fields. Use when the user wants to see
     actual records: 'show me events from this IP', 'what hit port 443 last week', 'events from
     Russia yesterday'. Filters: source_ip, country (2-letter code), asn (e.g. 'AS12345'),
-    dest_port, protocol ('tls' or ''), http_method. since/until are ISO-8601 UTC strings.
-    Each record includes: source_ip, country, asn, dest_port, user_agent, url_path,
-    tls_client_ja4, http_request_ja4h, ssh_client_hassh, network_protocol, timestamp."""
+    dest_port, protocol ('tls' or ''), http_method, ja4/ja3 (exact TLS fingerprint),
+    community_id (exact Corelight flow hash), has_client_cert (only mTLS-cert events).
+    since/until are ISO-8601 UTC strings. Each record includes: source_ip, country, asn,
+    dest_port, user_agent, url_path, tls_client_ja4, tls_client_ja3, http_request_ja4h,
+    ssh_client_hassh, community_id, tls_client_cert_subject/issuer, event_sequence,
+    event_duration, source/dest/network bytes, network_protocol, timestamp."""
     return await _call_or_stub("search_events_tool", {
         "since": since, "until": until, "source_ip": source_ip, "country": country,
         "asn": asn, "dest_port": dest_port, "protocol": protocol,
-        "http_method": http_method, "limit": limit,
+        "http_method": http_method, "ja4": ja4, "ja3": ja3,
+        "community_id": community_id, "has_client_cert": has_client_cert, "limit": limit,
     })
 
 
@@ -247,8 +257,8 @@ async def fingerprint_search_tool(
     """Search honeypot activity by TLS, HTTP, or SSH fingerprint. Use when a user asks:
     'have you seen this JA4 fingerprint?', 'which IPs share this TLS fingerprint?', 'how
     common is this HASSH?', 'find all scanners with this SSH client fingerprint'. fp_type:
-    'ja4' (TLS client, 3.7M events), 'ja4h' (HTTP client, 3.2M events), 'hassh' (SSH
-    client, 26K events). since/until are ISO-8601 UTC strings."""
+    'ja4' (TLS client), 'ja3' (legacy TLS client, MD5 — still keyed by many TI feeds),
+    'ja4h' (HTTP client), 'hassh' (SSH client). since/until are ISO-8601 UTC strings."""
     return await _call_or_stub("fingerprint_search_tool", {
         "fingerprint": fingerprint, "fp_type": fp_type,
         "since": since, "until": until, "limit": limit,
