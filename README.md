@@ -68,16 +68,18 @@ Cline's OAuth flow) works out of the box.
 
 | Tool | What it answers |
 |---|---|
-| `ioc_lookup` | Is this IP / domain known to be probing? When was it last seen? What ports / paths does it hit? |
-| `top_attackers` | Ranked leaderboard of source IPs, ASNs, countries, ports, or user-agents over a time window. |
+| `ioc_lookup` | Is this IP / domain known to be probing? Returns our verdict, whether it is a recognised benign scanner, the CVEs it probed, plus ports / paths / fingerprints. |
+| `top_attackers` | Ranked leaderboard of source IPs, ASNs, countries, ports, user-agents, or CVEs (`by='cve'`) over a time window. |
 | `search_events` | Raw honeypot events matching filters (IP, ASN, country, dest_port, protocol, http_method, ja4/ja3, community_id, has_client_cert). |
 | `attack_timeline` | Hourly / daily attack volume over a window, with protocol / country / port filters. |
 | `asn_enrich` | Full profile for an ASN: total events, unique IPs, top ports, source countries, user-agents, org name. |
 | `fingerprint_search` | Search by TLS JA4 / JA3 / HTTP JA4H / SSH HASSH fingerprint to find shared infrastructure. |
-| `payload_search` | Full-text URL-path + user-agent search across attack traffic. Pro tier. |
+| `cve_lookup` | Who is probing a named CVE: severity, KEV status, top probing IPs with ASN and scanner tag, fingerprints, sample paths, daily timeline. |
+| `payload_search` | Full-text URL-path + user-agent search across attack traffic. |
 
-Each row in a response counts as one credit. A free key gives 500
-credits a day, with higher limits for heavier use. See
+Every tool is free to call. Plans differ by how much you can pull, not by
+which tools exist: each row in a response counts as one credit, and a free
+key gives 500 credits a day, with higher limits for heavier use. See
 https://honeylabs.net/docs#plans for the breakdown.
 
 ---
@@ -107,6 +109,10 @@ Things to ask Claude / Cursor / Gemini once HoneyLabs is wired in:
   the last 24 hours."*
 - *"Show CVE-2024-4577 probing volume per day for the last 7 days,
   broken down by ASN."*
+- *"Which CVEs are being mass-scanned this week, and who is behind the
+  top one?"*
+- *"167.94.146.63 is hammering my firewall logs. Is that an attack or
+  a research scanner?"*
 - *"For the top 10 attackers on port 6379 right now, what TLS JA4
   fingerprints do they share?"*
 

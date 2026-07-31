@@ -49,13 +49,20 @@ mcp = FastMCP(
         "- Attack trends or volume over time -> attack_timeline_tool\n"
         "- Whether a TLS/HTTP/SSH fingerprint has been observed -> fingerprint_search_tool\n"
         "- Raw events for an IP, country, or port -> search_events_tool\n"
-        "- Exploit or payload patterns in HTTP traffic -> payload_search_tool\n\n"
+        "- Exploit or payload patterns in HTTP traffic -> payload_search_tool\n"
+        "- Whether a named CVE is being probed, and by whom -> cve_lookup_tool\n"
+        "- Which CVEs are being mass-scanned right now -> top_attackers_tool(by='cve')\n\n"
         "Data notes: sensor IPs and names are redacted. All timestamps are UTC. "
         "network_protocol is '' (raw TCP) or 'tls'. "
         "Fingerprint coverage: tls_client_ja4, tls_client_ja3 (legacy MD5), http_request_ja4h, ssh_client_hassh; "
         "events also carry network.community_id (Corelight flow hash) and, when a client presents one, an mTLS "
         "client certificate (tls_client_cert_subject). search_events filters on ja4/ja3/community_id/has_client_cert. "
-        "top_attackers 'by' values: ip, asn, country, port, user_agent, ja4, url_path."
+        "top_attackers 'by' values: ip, asn, country, port, user_agent, ja4, url_path, domain, cve.\n"
+        "Never pass a CVE id to payload_search: that tool matches literal payload text and a "
+        "CVE id is our tag for a pattern, so it will never match. Use cve_lookup_tool.\n"
+        "ioc_lookup returns `verdict`/`verdict_key` (our judgement) and `scanner` (non-null "
+        "for recognised research scanners like Censys or Shadowserver). A high event count "
+        "from a recognised scanner is benign research traffic, not an attack."
     ),
 )
 
@@ -178,7 +185,10 @@ async def top_attackers_tool(
     """Ranked leaderboard of attack sources. Use for: 'who is attacking the most?', 'top
     attacking countries', 'most targeted ports', 'most common user agents', 'top ASNs by
     attack volume', 'top IPs from China', 'top attackers hitting port 22'.
-    'by' controls grouping: ip, asn, country, port, user_agent, ja4, url_path.
+    'by' controls grouping: ip, asn, country, port, user_agent, ja4, url_path, domain, cve.
+    by='cve' answers 'what CVEs are being mass-scanned right now' and returns
+    value (the CVE id), title, severity, actively_exploited, counts and window_hours; drill
+    into any of them with cve_lookup. by='cve' does not accept the country/dest_port/asn filters.
     Optional filters: country (2-letter ISO, e.g. 'CN'), dest_port, asn (e.g. 'AS12345').
     Adding a filter is required for large time ranges to stay within memory limits.
     since/until are ISO-8601 UTC strings."""
@@ -194,8 +204,27 @@ async def ioc_lookup_tool(ioc: str) -> dict:
     user asks: 'is this IP malicious?', 'is this a known scanner?', 'have you seen this IP?',
     'what does this IP do?', 'when was it last seen?', 'is this IP in your data?'. Returns:
     total_events (0 = never observed), first_seen, last_seen, country, ASN, all ports targeted,
-    top user agents, top URL paths, TLS/HTTP/SSH fingerprints. Covers both IPv4 and domains."""
+    top user agents, top URL paths, TLS/HTTP/SSH fingerprints. Covers both IPv4 and domains.
+    Also returns our own judgement: `verdict` (human sentence) with `verdict_key` (stable
+    machine value to alert on) and `verdict_why`; `scanner` (benign-scanner identity from our
+    classification table, or null) so research traffic can be told apart from real attacks;
+    and `cve_probes`, the CVE signatures this address was seen probing."""
     return await _call_or_stub("ioc_lookup_tool", {"ioc": ioc})
+
+
+@mcp.tool()
+async def cve_lookup_tool(cve_id: str, window: str = "7d", limit: int = 25) -> dict:
+    """Who is probing a specific CVE. Use whenever the user names a CVE: 'is CVE-2024-4577
+    being exploited in the wild?', 'who is scanning for this CVE?', 'show me actors probing
+    CVE-2023-1389'. Returns severity, KEV (actively_exploited), event and unique-IP counts,
+    the top probing IPs with country/ASN/scanner tag, top ASNs, exploiter fingerprints,
+    sample request paths and a daily timeline. window: 24h, 7d, 30d or 90d.
+    `observed: false` with a note means we hold no detection pattern for that CVE, which is
+    NOT the same as nobody scanning it. Do not use payload_search for a CVE id: the id is
+    our tag for a pattern and never appears in the payload text."""
+    return await _call_or_stub("cve_lookup_tool", {
+        "cve_id": cve_id, "window": window, "limit": limit,
+    })
 
 
 @mcp.tool()
@@ -206,9 +235,11 @@ async def payload_search_tool(
     limit: int = 50,
 ) -> list[dict]:
     """Full-text search across HTTP URL paths and user agents in attack traffic. Use for:
-    'find attacks targeting /wp-admin', 'show exploit attempts for CVE-2024-XXXX', 'find
-    requests with this user agent string', 'what payloads hit port 80 last week'. Pro/Team
-    plan only. since/until are ISO-8601 UTC strings."""
+    'find attacks targeting /wp-admin', 'find requests with this user agent string',
+    'what payloads hit port 80 last week'. Matches literal text in the payload, so for a
+    CVE use cve_lookup instead: a CVE id is our tag for a pattern and never appears in the
+    payload itself. Free to call; volume is metered like every other tool.
+    since/until are ISO-8601 UTC strings."""
     return await _call_or_stub("payload_search_tool", {
         "query": query, "since": since, "until": until, "limit": limit,
     })
