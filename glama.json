@@ -1,8 +1,10 @@
 {
   "$schema": "https://glama.ai/mcp/schemas/server.json",
-  "maintainers": ["honeylabshq"],
+  "maintainers": [
+    "honeylabshq"
+  ],
   "name": "honeylabs-mcp",
-  "description": "Honeypot threat intelligence for AI agents. Query 90 days of probe data from a global sensor network: IP reputation, scanner classification, CVE probing trends, TLS/SSH/JA4 fingerprints. Free tier 500 credits/day, OAuth 2.1 + bearer auth, streamable HTTP at https://mcp.honeylabs.net/mcp.",
+  "description": "Honeypot threat intelligence for AI agents. Query 90 days of probe data from a global sensor network: IP reputation with a verdict, benign-scanner classification from our own observations, per-CVE probing activity, TLS/SSH/JA4 fingerprints. Every tool free to call, 500 credits/day on the free tier, OAuth 2.1 + bearer auth, streamable HTTP at https://mcp.honeylabs.net/mcp.",
   "keywords": [
     "honeypot",
     "threat-intelligence",
