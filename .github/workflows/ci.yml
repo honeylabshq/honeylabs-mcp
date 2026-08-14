@@ -22,6 +22,20 @@ jobs:
       - name: Import stub server (registers tools, does not start it)
         run: python -c "import sys; sys.path.insert(0, 'glama'); import stub_server; print('tools registered')"
 
+  stub-drift:
+    name: stub matches production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # Directories score this stub, not production, so a tool that exists in one
+      # and not the other is invisible to them. MCP discovery is ungated on
+      # production, so this needs no credential. Uses stdlib only.
+      - name: Compare stub tools against the live tools/list
+        run: python scripts/check_stub_drift.py
+
   docker:
     name: docker build
     runs-on: ubuntu-latest
