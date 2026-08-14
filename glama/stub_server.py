@@ -296,5 +296,22 @@ async def fingerprint_search_tool(
     })
 
 
+@mcp.tool()
+async def fingerprint_population_tool(
+    fingerprint: str,
+    fp_type: str,
+) -> dict:
+    """The population behind a single client fingerprint: how many source IPs carry it,
+    across how many networks (ASNs) and countries, the ports they hit, the top networks
+    and a sample of the IPs, plus a read on whether it is concentrated (a likely
+    coordinated operation, many IPs on few networks) or spread thin (a common client).
+    Use when a user asks: 'is this JA4 one botnet or a common tool?', 'how many networks
+    use this HASSH?', 'how specific / concentrated is this fingerprint?'. fp_type: 'ja4'
+    (TLS), 'ja4h' (HTTP), 'hassh' (SSH). Covers the full retained window (no date range)."""
+    return await _call_or_stub("fingerprint_population_tool", {
+        "fingerprint": fingerprint, "fp_type": fp_type,
+    })
+
+
 if __name__ == "__main__":
     mcp.run()
