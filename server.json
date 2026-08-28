@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "net.honeylabs/mcp",
   "title": "HoneyLabs",
-  "description": "Query 90 days of honeypot probe data: IP reputation with a verdict and benign-scanner classification, who is probing a given CVE, application-protocol classification, TLS/SSH fingerprints.",
+  "description": "Honeypot probe data: IP reputation, scanners, CVE probing, TLS and SSH fingerprints.",
   "version": "1.1.0",
   "repository": {
     "url": "https://github.com/honeylabshq/honeylabs-mcp",
@@ -16,7 +16,7 @@
       "headers": [
         {
           "name": "Authorization",
-          "description": "Bearer <hlk_\u2026> API key from https://honeylabs.net/dashboard. OAuth 2.1 with PKCE is also supported (DCR endpoint at /oauth/register).",
+          "description": "Bearer <hlk_…> API key from https://honeylabs.net/dashboard. Clients that support OAuth 2.1 need no key: the server advertises Dynamic Client Registration via WWW-Authenticate and /.well-known/oauth-protected-resource.",
           "isRequired": true,
           "isSecret": true
         }
