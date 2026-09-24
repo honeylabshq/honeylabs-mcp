@@ -2,7 +2,7 @@
 
 **Honeypot threat intelligence as MCP tools.** Query 90 days of probe
 data from our honeypot sensor network: IP reputation, scanner
-classification, CVE probing trends, TLS/SSH fingerprints (JA4, JA3, JA4H,
+classification, CVE probing trends, TLS/HTTP/SSH fingerprints (JA4, JA3, Akin,
 HASSH), mTLS client certificates, Community ID flow hashes, and attack
 timelines. Use it straight from Claude, Cursor, Gemini, Cline, or any
 other Model Context Protocol client.
@@ -70,10 +70,10 @@ Cline's OAuth flow) works out of the box.
 |---|---|
 | `ioc_lookup` | Is this IP / domain known to be probing? Returns our verdict, whether it is a recognised benign scanner, the CVEs it probed, plus ports / paths / fingerprints. |
 | `top_attackers` | Ranked leaderboard of source IPs, ASNs, countries, ports, user-agents, or CVEs (`by='cve'`) over a time window. |
-| `search_events` | Raw honeypot events matching filters (IP, ASN, country, dest_port, protocol, http_method, ja4/ja3, community_id, has_client_cert). |
+| `search_events` | Raw honeypot events matching filters (IP, ASN, country, dest_port, protocol, http_method, ja4/ja3/akin, community_id, has_client_cert). |
 | `attack_timeline` | Hourly / daily attack volume over a window, with protocol / country / port filters. |
 | `asn_enrich` | Full profile for an ASN: total events, unique IPs, top ports, source countries, user-agents, org name. |
-| `fingerprint_search` | Search by TLS JA4 / JA3 / HTTP JA4H / SSH HASSH fingerprint to find shared infrastructure. |
+| `fingerprint_search` | Search by TLS JA4 / JA3, HTTP Akin or SSH HASSH fingerprint to find shared infrastructure. |
 | `cve_lookup` | Who is probing a named CVE: severity, KEV status, top probing IPs with ASN and scanner tag, fingerprints, sample paths, daily timeline. |
 | `payload_search` | Full-text URL-path + user-agent search across attack traffic. |
 

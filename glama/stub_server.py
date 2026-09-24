@@ -54,7 +54,7 @@ mcp = FastMCP(
         "- Which CVEs are being mass-scanned right now -> top_attackers_tool(by='cve')\n\n"
         "Data notes: sensor IPs and names are redacted. All timestamps are UTC. "
         "network_protocol is '' (raw TCP) or 'tls'. "
-        "Fingerprint coverage: tls_client_ja4, tls_client_ja3 (legacy MD5), http_request_ja4h, ssh_client_hassh; "
+        "Fingerprint coverage: tls_client_ja4, tls_client_ja3 (legacy MD5), http_request_akin, ssh_client_hassh; "
         "events also carry network.community_id (Corelight flow hash) and, when a client presents one, an mTLS "
         "client certificate (tls_client_cert_subject). search_events filters on ja4/ja3/community_id/has_client_cert. "
         "top_attackers 'by' values: ip, asn, country, port, user_agent, ja4, url_path, domain, cve.\n"
@@ -161,7 +161,7 @@ async def search_events_tool(
     dest_port, protocol ('tls' or ''), http_method, ja4/ja3 (exact TLS fingerprint),
     community_id (exact Corelight flow hash), has_client_cert (only mTLS-cert events).
     since/until are ISO-8601 UTC strings. Each record includes: source_ip, country, asn,
-    dest_port, user_agent, url_path, tls_client_ja4, tls_client_ja3, http_request_ja4h,
+    dest_port, user_agent, url_path, tls_client_ja4, tls_client_ja3, http_request_akin,
     ssh_client_hassh, community_id, tls_client_cert_subject/issuer, event_sequence,
     event_duration, source/dest/network bytes, network_protocol, timestamp."""
     return await _call_or_stub("search_events_tool", {
@@ -289,7 +289,7 @@ async def fingerprint_search_tool(
     'have you seen this JA4 fingerprint?', 'which IPs share this TLS fingerprint?', 'how
     common is this HASSH?', 'find all scanners with this SSH client fingerprint'. fp_type:
     'ja4' (TLS client), 'ja3' (legacy TLS client, MD5, still keyed by many TI feeds),
-    'ja4h' (HTTP client), 'hassh' (SSH client). since/until are ISO-8601 UTC strings."""
+    'akin' (HTTP request shape), 'hassh' (SSH client). since/until are ISO-8601 UTC strings."""
     return await _call_or_stub("fingerprint_search_tool", {
         "fingerprint": fingerprint, "fp_type": fp_type,
         "since": since, "until": until, "limit": limit,
@@ -307,7 +307,7 @@ async def fingerprint_population_tool(
     coordinated operation, many IPs on few networks) or spread thin (a common client).
     Use when a user asks: 'is this JA4 one botnet or a common tool?', 'how many networks
     use this HASSH?', 'how specific / concentrated is this fingerprint?'. fp_type: 'ja4'
-    (TLS), 'ja4h' (HTTP), 'hassh' (SSH). Covers the full retained window (no date range)."""
+    (TLS), 'akin' (HTTP), 'hassh' (SSH). Covers the full retained window (no date range)."""
     return await _call_or_stub("fingerprint_population_tool", {
         "fingerprint": fingerprint, "fp_type": fp_type,
     })
