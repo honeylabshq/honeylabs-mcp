@@ -74,6 +74,7 @@ Cline's OAuth flow) works out of the box.
 | `attack_timeline` | Hourly / daily attack volume over a window, with protocol / country / port filters. |
 | `asn_enrich` | Full profile for an ASN: total events, unique IPs, top ports, source countries, user-agents, org name. |
 | `fingerprint_search` | Search by TLS JA4 / JA3, HTTP Akin or SSH HASSH fingerprint to find shared infrastructure. |
+| `fingerprint_similar` | Request shapes within a few headers of an Akin HTTP fingerprint, what those clients ask for, and the family the token belongs to. |
 | `cve_lookup` | Who is probing a named CVE: severity, KEV status, top probing IPs with ASN and scanner tag, fingerprints, sample paths, daily timeline. |
 | `payload_search` | Full-text URL-path + user-agent search across attack traffic. |
 
