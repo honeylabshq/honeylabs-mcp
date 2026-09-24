@@ -151,6 +151,7 @@ async def search_events_tool(
     http_method: Optional[str] = None,
     ja4: Optional[str] = None,
     ja3: Optional[str] = None,
+    akin: Optional[str] = None,
     community_id: Optional[str] = None,
     has_client_cert: Optional[bool] = None,
     limit: int = 100,
@@ -167,7 +168,7 @@ async def search_events_tool(
     return await _call_or_stub("search_events_tool", {
         "since": since, "until": until, "source_ip": source_ip, "country": country,
         "asn": asn, "dest_port": dest_port, "protocol": protocol,
-        "http_method": http_method, "ja4": ja4, "ja3": ja3,
+        "http_method": http_method, "ja4": ja4, "ja3": ja3, "akin": akin,
         "community_id": community_id, "has_client_cert": has_client_cert, "limit": limit,
     })
 
@@ -310,6 +311,23 @@ async def fingerprint_population_tool(
     (TLS), 'akin' (HTTP), 'hassh' (SSH). Covers the full retained window (no date range)."""
     return await _call_or_stub("fingerprint_population_tool", {
         "fingerprint": fingerprint, "fp_type": fp_type,
+    })
+
+
+@mcp.tool()
+async def fingerprint_similar_tool(
+    fingerprint: str,
+    max_distance: int = 2,
+    limit: int = 8,
+) -> dict:
+    """Request shapes within a few headers of an Akin HTTP fingerprint, with what
+    those clients ask for and call themselves, plus the family the token belongs
+    to. Use when one odd request shape turns up in your own web, WAF or proxy logs
+    and you want to know whether it is a known tool with variants: 'what is close
+    to this fingerprint', 'is this the same scanner with one header added', 'what
+    does this client family go after'. max_distance is in headers, 1 to 4."""
+    return await _call_or_stub("fingerprint_similar_tool", {
+        "fingerprint": fingerprint, "max_distance": max_distance, "limit": limit,
     })
 
 
