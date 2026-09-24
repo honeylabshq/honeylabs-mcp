@@ -26,7 +26,7 @@ claude mcp add honeylabs \
   --header "Authorization: Bearer <your-key>"
 ```
 
-Get a key at https://honeylabs.net/dashboard (magic-link sign-in, no
+Get a key at https://honeylabs.net/dashboard?src=github (magic-link sign-in, no
 password).
 
 ### Claude Desktop / Cursor
