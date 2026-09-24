@@ -33,7 +33,7 @@ API_KEY = (os.environ.get("HONEYLABS_API_KEY") or "").strip()
 _STUB_MESSAGE = (
     "This is the HoneyLabs MCP stub used by directory evaluators. "
     "Configure HONEYLABS_API_KEY with a real key from "
-    "https://honeylabs.net/dashboard to query live honeypot data."
+    "https://honeylabs.net/dashboard?src=mcp to query live honeypot data."
 )
 
 
