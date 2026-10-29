@@ -76,12 +76,21 @@ Cline's OAuth flow) works out of the box.
 | `fingerprint_search` | Search by TLS JA4 / JA3, HTTP Akin or SSH HASSH fingerprint to find shared infrastructure. |
 | `fingerprint_similar` | Request shapes within a few headers of an Akin HTTP fingerprint, what those clients ask for, and the family the token belongs to. |
 | `cve_lookup` | Who is probing a named CVE: severity, KEV status, top probing IPs with ASN and scanner tag, fingerprints, sample paths, daily timeline. |
-| `payload_search` | Full-text URL-path + user-agent search across attack traffic. |
+| `payload_search` | Substring search across request paths, bodies and headers. Never a CVE id. |
+| `fingerprint_population` | How many addresses and networks carry one fingerprint, and whether it looks like one operation. |
+| `udp_activity` | DNS questions, QUIC client fingerprints and other UDP probes. UDP sources can be forged. |
+| `interactive_credentials` | Logins tried against the interactive sensors, per service. |
+| `interactive_files` | Files clients handed to the interactive sensors, by SHA-256, with the VirusTotal verdict. |
+| `interactive_sessions` | Sessions one address or range held with the interactive sensors. |
 
 Every tool is free to call. Plans differ by how much you can pull, not by
 which tools exist: each row in a response counts as one credit, and a free
 key gives 500 credits a day, with higher limits for heavier use. See
-https://honeylabs.net/docs#plans for the breakdown.
+https://honeylabs.net/docs#plans for the breakdown, or
+https://honeylabs.net/pricing.json for the same as JSON.
+
+Tool names on the server carry a `_tool` suffix (`ioc_lookup_tool`). The
+server card is at https://mcp.honeylabs.net/mcp/server-card.
 
 ---
 

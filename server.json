@@ -3,7 +3,7 @@
   "name": "net.honeylabs/mcp",
   "title": "HoneyLabs",
   "description": "Honeypot probe data: IP reputation, scanners, CVE probing, TLS and SSH fingerprints.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "repository": {
     "url": "https://github.com/honeylabshq/honeylabs-mcp",
     "source": "github"

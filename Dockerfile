@@ -3,7 +3,7 @@
 # Production lives at https://mcp.honeylabs.net/mcp (remote streamable-http,
 # OAuth + Bearer auth). The Glama directory needs a Dockerfile-buildable
 # artifact to run sandboxed for Tool Definition Quality + Server Coherence
-# scoring; this image satisfies that by registering the same 7 tools with
+# scoring; this image satisfies that by registering the same tools with
 # identical names, parameter schemas, and docstrings as production. The
 # tool *implementations* return a stub message pointing the caller at the
 # live endpoint, because the real implementations depend on backend
