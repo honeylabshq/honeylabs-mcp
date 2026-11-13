@@ -1,0 +1,41 @@
+# Dependabot patch and minor updates merge by themselves once the required
+# checks pass, with no model and no person in the path (owner, 2026-11-13:
+# dependencies must still be updated when the AI loops are off). Majors are
+# never merged here; they wait for a person.
+#
+# main is protected with required checks (docker build, python stub, stub
+# matches production), so GitHub's auto-merge merges only after those are
+# green on the pull request's head.
+name: Dependabot auto-merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  automerge:
+    name: dependabot automerge
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PR_URL: ${{ github.event.pull_request.html_url }}
+    steps:
+      - id: meta
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+        with:
+          github-token: ${{ github.token }}
+      - name: Auto-merge patch and minor updates
+        if: steps.meta.outputs.update-type == 'version-update:semver-patch' || steps.meta.outputs.update-type == 'version-update:semver-minor'
+        run: gh pr merge --auto --squash "$PR_URL"
+      - name: Leave majors to a person
+        if: steps.meta.outputs.update-type != 'version-update:semver-patch' && steps.meta.outputs.update-type != 'version-update:semver-minor'
+        env:
+          UPDATE_TYPE: ${{ steps.meta.outputs.update-type }}
+        run: echo "update type ${UPDATE_TYPE:-unknown}, not merged automatically"
