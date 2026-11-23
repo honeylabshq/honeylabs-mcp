@@ -1,5 +1,7 @@
 # HoneyLabs
 
+Maintained by [HoneyLabs, honeypot threat intelligence](https://honeylabs.net).
+
 **Honeypot threat intelligence as MCP tools.** Query 90 days of probe
 data from our honeypot sensor network: IP reputation, scanner
 classification, CVE probing trends, TLS/HTTP/SSH fingerprints (JA4, JA3, Akin,
